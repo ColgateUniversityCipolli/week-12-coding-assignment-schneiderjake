@@ -16,6 +16,8 @@
 \begin{document}
 <<echo=F, message=F, warning=F>>=
 library(tidyverse)
+library(VGAM)
+library(boot)
 @
 
 \begin{enumerate}
@@ -49,12 +51,68 @@ alternative.
 \begin{enumerate}
   \item What values of $t_{20}$ provide statistically discernible support for the
   alternative hypothesis?
+  <<size="scriptsize">>=
+  c20 <- qt(.95, df = 19)
+  print(c20)
+  @
+
   \item What values of $t_{30}$ provide statistically discernible support for the
   alternative hypothesis?
+   
+  <<size="scriptsize">>=
+  c30 <- qt(.95, df=29)
+  print(c30)
+  @
+  
   \item Suppose $f_X(x)$ is a Laplace distribution with $a=0$ and $b=4.0$.
   Conduct a simulation study to assess the Type I error rate of this approach.\\
   \textbf{Note:} You can use the \texttt{rlaplace()} function from the \texttt{VGAM}
   package for \texttt{R} \citep{VGAM}.
+  
+  <<size="scriptsize">>=
+  
+a <- 0
+b <- 4
+n.sims <- 10000
+
+#function
+sim.experiment <- function() {
+  #30 samples
+  observations <- rlaplace(30, location=a, scale=b)
+  
+  #t stat month 20
+  mean.20 <- mean(observations[1:20])
+  sd.20 <- sd(observations[1:20])
+  t.20 <- (mean.20 - 0) / (sd.20 / sqrt(20))
+  
+  #rejection check at month 20
+  if (t.20 > c20) {
+    return(1)  #reject H0, stop early
+  }
+  
+  #t stat month 30
+  mean.30 <- mean(observations)
+  sd.30 <- sd(observations)
+  t.30 <- (mean.30 - 0) / (sd.30 / sqrt(30))
+  
+  #reject check at month 30
+  if (t.30 > c30) {
+    return(1)  #reject H0
+  } else {
+    return(0)  #fail to reject H0
+  }
+}
+
+#run the simulation
+results <- replicate(n.sims, sim.experiment())
+
+#calc Type I error rate
+type_I_error <- mean(results)
+print(paste("Type I error rate:", round(type_I_error, 4)))
+@
+  
+  
+  
   \item \textbf{Optional Challenge:} Can you find a value of $\alpha<0.05$ that yields a 
   Type I error rate of 0.05?
 \end{enumerate}
@@ -71,12 +129,39 @@ alternative.
   \begin{enumerate}
     \item What proportion of the time do we make an error of Type I for a
     left-tailed test?
+    
+    We saw Type I error rates of 0.03, 0.08 and 0.05 for the left tailed t-test under the Beta(10,2), Beta(2,10), and Beta(10,10) distributions, respectively, which we can see in Table \ref{table1}.
+    
     \item What proportion of the time do we make an error of Type I for a
     right-tailed test?
+    
+    We saw Type I error rates of 0.08, 0.03 and 0.05 for the right tailed t-test under the Beta(10,2), Beta(2,10), and Beta(10,10) distributions, respectively, which we can see in Table \ref{table1}.
+    
     \item What proportion of the time do we make an error of Type I for a
     two-tailed test?
+    
+    We saw Type I error rates of 0.06, 0.06 and 0.05 for the two tailed t-test under the Beta(10,2), Beta(2,10), and Beta(10,10) distributions, respectively, which we can see in Table \ref{table1}.
+    
+    
+    \begin{table}[ht]
+\centering
+\begin{tabular}{lccc}
+  \hline
+Distribution & Left Tailed & Right Tailed & Two Tailed \\ 
+  \hline
+Beta(10,2) & 0.03 & 0.08 & 0.06 \\ 
+  Beta(2,10) & 0.08 & 0.03 & 0.06 \\ 
+  Beta(10,10) & 0.05 & 0.05 & 0.05 \\ 
+   \hline
+\end{tabular}
+\caption{Type I error rate for Beta Distributions Depending on Test}
+\label{table1}
+\end{table}
     \item How does skewness of the underlying population distribution effect
     Type I error across the test types?
+  If we have a small sample size (n<30) and our underlying population distribution is not normally distributed then these results indicate that the skewness distorts the sampling distribution of the t-statistic. It causes both inflated or deflated results depending on the direction of the test. However, if our underlying population is normally distributed then we would expect our results to be close to the expected level which we saw in the results. 
+    
+    
   \end{enumerate}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
